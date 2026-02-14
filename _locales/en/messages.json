@@ -1,0 +1,56 @@
+{
+  "appName": {
+    "message": "dodo - AI Chat Flow & Message Queue"
+  },
+  "appDesc": {
+    "message": "Manage message queues and conversation flow on AI platforms"
+  },
+  "tabQueue": {
+    "message": "Queue"
+  },
+  "tabFlow": {
+    "message": "Flow"
+  },
+  "addToList": {
+    "message": "Add to List"
+  },
+  "inputPlaceholder": {
+    "message": "Add to queue... (Ctrl+Enter)"
+  },
+  "noPromptsFound": {
+    "message": "No user prompts found on $PLATFORM$",
+    "placeholders": {
+      "platform": {
+        "content": "$1",
+        "example": "ChatGPT"
+      }
+    }
+  },
+  "toggleList": {
+    "message": "Toggle List"
+  },
+  "expand": {
+    "message": "Expand"
+  },
+  "collapse": {
+    "message": "Collapse"
+  },
+  "minimize": {
+    "message": "Minimize"
+  },
+  "tipEdit": {
+    "message": "Edit"
+  },
+  "tipFill": {
+    "message": "Fill"
+  },
+  "tipSend": {
+    "message": "Send"
+  },
+  "tipDelete": {
+    "message": "Delete"
+  },
+  "noText": {
+    "message": "(No text)"
+  }
+}

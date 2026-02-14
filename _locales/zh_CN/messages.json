@@ -1,0 +1,56 @@
+{
+  "appName": {
+    "message": "dodo - AI 对话流与消息队列管理"
+  },
+  "appDesc": {
+    "message": "管理 AI 平台上的消息队列与对话流"
+  },
+  "tabQueue": {
+    "message": "Queue"
+  },
+  "tabFlow": {
+    "message": "Flow"
+  },
+  "addToList": {
+    "message": "Add to List"
+  },
+  "inputPlaceholder": {
+    "message": "添加到队列... (Ctrl+Enter)"
+  },
+  "noPromptsFound": {
+    "message": "在 $PLATFORM$ 上未找到用户消息",
+    "placeholders": {
+      "platform": {
+        "content": "$1",
+        "example": "ChatGPT"
+      }
+    }
+  },
+  "toggleList": {
+    "message": "切换列表"
+  },
+  "expand": {
+    "message": "展开"
+  },
+  "collapse": {
+    "message": "收起"
+  },
+  "minimize": {
+    "message": "最小化"
+  },
+  "tipEdit": {
+    "message": "编辑"
+  },
+  "tipFill": {
+    "message": "填入"
+  },
+  "tipSend": {
+    "message": "发送"
+  },
+  "tipDelete": {
+    "message": "删除"
+  },
+  "noText": {
+    "message": "(无文本)"
+  }
+}
