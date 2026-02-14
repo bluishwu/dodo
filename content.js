@@ -267,11 +267,16 @@ function startConversationObserver() {
   observer.observe(document.body, { childList: true, subtree: true });
 }
 
+let articleToFlowIndex = new Map();
+
 function scanConversation() {
   const articles = document.querySelectorAll(currentConfig.articles);
   const newList = [];
+  articleToFlowIndex.clear();
   
-  articles.forEach((article, index) => {
+  let currentFlowIndex = -1;
+  
+  articles.forEach((article) => {
     let isUser = false;
     if (isChatGPT) {
       isUser = !!article.querySelector(currentConfig.roleUser);
@@ -280,15 +285,19 @@ function scanConversation() {
     }
     
     if (isUser) {
+      currentFlowIndex = newList.length;
       const textElement = article.querySelector(currentConfig.messageContent) || article;
       let preview = textElement.innerText.slice(0, 100).replace(/\n/g, ' ') || i18n('noText');
       preview = preview.replace(/^(You said|你说)[:：]?\s*/i, '');
-      
       const hasImage = !!article.querySelector('img, .image-attachment, [data-testid="image-attachment"], .chip-image');
       
       newList.push({
-        id: index, text: preview, hasImage: hasImage, element: article 
+        id: currentFlowIndex, text: preview, hasImage: hasImage, element: article 
       });
+    }
+    
+    if (currentFlowIndex !== -1) {
+      articleToFlowIndex.set(article, currentFlowIndex);
     }
   });
   
@@ -304,18 +313,43 @@ function scanConversation() {
 
 function observeFlowVisibility() {
   disconnectFlowObserver();
+  
+  const visibleRatios = new Map();
+
   flowObserver = new IntersectionObserver((entries) => {
-    const visibleEntry = entries.find(entry => entry.isIntersecting);
-    if (visibleEntry) {
-      document.querySelectorAll('.outline-item.active').forEach(el => el.classList.remove('active'));
-      const index = flowList.findIndex(item => item.element === visibleEntry.target);
-      if (index !== -1) {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        visibleRatios.set(entry.target, entry.intersectionRatio);
+      } else {
+        visibleRatios.delete(entry.target);
+      }
+    });
+
+    let maxRatio = -1;
+    let bestElement = null;
+    visibleRatios.forEach((ratio, el) => {
+      if (ratio > maxRatio) {
+        maxRatio = ratio;
+        bestElement = el;
+      }
+    });
+
+    if (bestElement) {
+      const index = articleToFlowIndex.get(bestElement);
+      if (index !== undefined) {
+        document.querySelectorAll('.outline-item.active').forEach(el => el.classList.remove('active'));
         const item = document.querySelector(`.outline-item[data-flow-index="${index}"]`);
         if (item) item.classList.add('active');
       }
     }
-  }, { root: null, threshold: 0.1 });
-  flowList.forEach(item => item.element && flowObserver.observe(item.element));
+  }, { 
+    root: null, 
+    threshold: [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1] 
+  });
+
+  document.querySelectorAll(currentConfig.articles).forEach(article => {
+    flowObserver.observe(article);
+  });
 }
 
 function disconnectFlowObserver() { if (flowObserver) { flowObserver.disconnect(); flowObserver = null; } }
@@ -337,7 +371,12 @@ function renderFlow(container) {
     el.className = `outline-item`; el.dataset.flowIndex = index;
     const imgIcon = item.hasImage ? `<span class="flow-img-icon"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></span>` : '';
     el.innerHTML = `<div class="outline-left"><div class="flow-index">${index + 1}</div></div><div class="outline-text">${imgIcon}${escapeHtml(item.text)}</div>`;
-    el.addEventListener('click', () => item.element.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+    el.addEventListener('click', () => {
+      item.element.scrollIntoView({ behavior: 'auto', block: 'start' });
+      requestAnimationFrame(() => {
+        item.element.scrollIntoView({ behavior: 'auto', block: 'start' });
+      });
+    });
     container.appendChild(el);
   });
   if (uiState.activeTab === 'flow') observeFlowVisibility();
