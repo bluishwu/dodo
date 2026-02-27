@@ -9,7 +9,9 @@ let uiState = {
   isCollapsed: true,
   activeTab: 'pending', 
   top: 80,
-  left: null
+  left: null,
+  width: 360,
+  height: null
 };
 
 const isGemini = window.location.hostname.includes('gemini.google.com');
@@ -62,6 +64,9 @@ function injectUI() {
     container.style.left = uiState.left ? uiState.left + 'px' : (window.innerWidth - 380) + 'px';
     if (uiState.isCollapsed) container.classList.add('collapsed');
   }
+  
+  if (uiState.width) container.style.width = uiState.width + 'px';
+  if (uiState.height) container.style.height = uiState.height + 'px';
 
   container.innerHTML = `
     <div class="toggle-sidebar" title="${i18n('toggleList')}">
@@ -93,10 +98,20 @@ function injectUI() {
       <textarea class="pending-textarea" placeholder="${i18n('inputPlaceholder')}"></textarea>
       <button class="add-pending-btn">${i18n('addToList')}</button>
     </div>
+
+    <div class="resizer resizer-n"></div>
+    <div class="resizer resizer-s"></div>
+    <div class="resizer resizer-e"></div>
+    <div class="resizer resizer-w"></div>
+    <div class="resizer resizer-nw"></div>
+    <div class="resizer resizer-ne"></div>
+    <div class="resizer resizer-sw"></div>
+    <div class="resizer resizer-se"></div>
   `;
 
   document.body.appendChild(container);
   makeDraggable(container);
+  makeResizable(container);
 
   container.querySelector('.toggle-sidebar').addEventListener('click', () => toggleCollapse(container));
   container.querySelector('.floating-icon-view').addEventListener('click', () => {
@@ -170,6 +185,118 @@ function updateTabs(container) {
   if (inputArea) inputArea.style.display = uiState.activeTab === 'pending' ? 'block' : 'none';
 }
 
+function makeResizable(element) {
+  let isResizing = false;
+  let currentResizer = null;
+  let startX, startY, startWidth, startHeight, startLeft, startTop;
+
+  const resizers = element.querySelectorAll('.resizer');
+  
+  for (let resizer of resizers) {
+    resizer.addEventListener('mousedown', (e) => {
+      isResizing = true;
+      currentResizer = e.target;
+      startX = e.clientX;
+      startY = e.clientY;
+      const rect = element.getBoundingClientRect();
+      startWidth = rect.width;
+      startHeight = rect.height;
+      startLeft = rect.left;
+      startTop = rect.top;
+      
+      element.classList.add('resizing');
+      e.preventDefault();
+      e.stopPropagation();
+    });
+  }
+
+  document.addEventListener('mousemove', (e) => {
+    if (!isResizing) return;
+    
+    let newWidth = startWidth;
+    let newHeight = startHeight;
+    let newLeft = startLeft;
+    let newTop = startTop;
+    
+    const isDocked = element.classList.contains('docked');
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+
+    if (currentResizer.classList.contains('resizer-e')) {
+      newWidth = startWidth + dx;
+    } else if (currentResizer.classList.contains('resizer-w')) {
+      newWidth = startWidth - dx;
+      if (!isDocked) newLeft = startLeft + dx;
+    }
+
+    if (currentResizer.classList.contains('resizer-s')) {
+      newHeight = startHeight + dy;
+    } else if (currentResizer.classList.contains('resizer-n')) {
+      newHeight = startHeight - dy;
+      newTop = startTop + dy;
+    }
+
+    // Corner logic
+    if (currentResizer.classList.contains('resizer-se')) {
+      newWidth = startWidth + dx;
+      newHeight = startHeight + dy;
+    } else if (currentResizer.classList.contains('resizer-sw')) {
+      newWidth = startWidth - dx;
+      if (!isDocked) newLeft = startLeft + dx;
+      newHeight = startHeight + dy;
+    } else if (currentResizer.classList.contains('resizer-ne')) {
+      newWidth = startWidth + dx;
+      newHeight = startHeight - dy;
+      newTop = startTop + dy;
+    } else if (currentResizer.classList.contains('resizer-nw')) {
+      newWidth = startWidth - dx;
+      if (!isDocked) newLeft = startLeft + dx;
+      newHeight = startHeight - dy;
+      newTop = startTop + dy;
+    }
+
+    // Constraints
+    const minW = 200, maxW = 800;
+    const minH = 150, maxH = window.innerHeight * 0.95;
+
+    if (newWidth < minW) {
+      if (newLeft !== startLeft) newLeft = startLeft + (startWidth - minW);
+      newWidth = minW;
+    } else if (newWidth > maxW) {
+      if (newLeft !== startLeft) newLeft = startLeft - (maxW - startWidth);
+      newWidth = maxW;
+    }
+
+    if (newHeight < minH) {
+      if (newTop !== startTop) newTop = startTop + (startHeight - minH);
+      newHeight = minH;
+    } else if (newHeight > maxH) {
+      if (newTop !== startTop) newTop = startTop - (maxH - startHeight);
+      newHeight = maxH;
+    }
+
+    element.style.width = newWidth + 'px';
+    element.style.height = newHeight + 'px';
+    
+    if (!isDocked) {
+      element.style.left = newLeft + 'px';
+      uiState.left = newLeft;
+    }
+    element.style.top = newTop + 'px';
+    uiState.top = newTop;
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (isResizing) {
+      isResizing = false;
+      element.classList.remove('resizing');
+      uiState.width = parseInt(element.style.width, 10);
+      uiState.height = parseInt(element.style.height, 10);
+      saveUIState();
+    }
+  });
+}
+
 function makeDraggable(element) {
   const header = element.querySelector('.unified-header');
   const iconView = element.querySelector('.floating-icon-view');
@@ -177,7 +304,7 @@ function makeDraggable(element) {
   let startX, startY, initialLeft, initialTop;
 
   const onMouseDown = (e) => {
-    if (e.target.closest('button') || e.target.closest('.minimize-btn') || e.target.closest('.header-chevron') || e.target.closest('.tab-item')) return;
+    if (e.target.closest('button') || e.target.closest('.minimize-btn') || e.target.closest('.header-chevron') || e.target.closest('.tab-item') || e.target.closest('.resizer')) return;
     isDragging = true;
     startX = e.clientX; startY = e.clientY;
     const rect = element.getBoundingClientRect();
@@ -372,10 +499,29 @@ function renderFlow(container) {
     const imgIcon = item.hasImage ? `<span class="flow-img-icon"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></span>` : '';
     el.innerHTML = `<div class="outline-left"><div class="flow-index">${index + 1}</div></div><div class="outline-text">${imgIcon}${escapeHtml(item.text)}</div>`;
     el.addEventListener('click', () => {
-      item.element.scrollIntoView({ behavior: 'auto', block: 'start' });
-      requestAnimationFrame(() => {
-        item.element.scrollIntoView({ behavior: 'auto', block: 'start' });
-      });
+      // Re-query the element at click time to handle Gemini re-renders
+      let targetEl = null;
+      const allArticles = document.querySelectorAll(currentConfig.articles);
+      let userCount = -1;
+      for (let article of allArticles) {
+        const isUser = isGemini
+          ? article.tagName.toLowerCase() === 'user-query'
+          : !!article.querySelector(currentConfig.roleUser);
+        if (isUser) {
+          userCount++;
+          if (userCount === index) {
+            targetEl = article;
+            break;
+          }
+        }
+      }
+      if (!targetEl) targetEl = item.element;
+      if (targetEl && document.contains(targetEl)) {
+        targetEl.scrollIntoView({ behavior: 'auto', block: 'start' });
+        requestAnimationFrame(() => {
+          targetEl.scrollIntoView({ behavior: 'auto', block: 'start' });
+        });
+      }
     });
     container.appendChild(el);
   });
