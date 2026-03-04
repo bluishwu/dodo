@@ -3,7 +3,7 @@
     "message": "dodo - AI Chat Flow & Message Queue"
   },
   "appDesc": {
-    "message": "Manage message queues and conversation flow on AI platforms"
+    "message": "Manage message queues and conversation flow on ChatGPT, Gemini, Claude, and NotebookLM."
   },
   "tabQueue": {
     "message": "Queue"

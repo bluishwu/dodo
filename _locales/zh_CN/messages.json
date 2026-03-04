@@ -3,7 +3,7 @@
     "message": "dodo - AI 对话流与消息队列管理"
   },
   "appDesc": {
-    "message": "管理 AI 平台上的消息队列与对话流"
+    "message": "在 ChatGPT、Gemini、Claude 和 NotebookLM 上管理消息队列与对话流"
   },
   "tabQueue": {
     "message": "Queue"

@@ -16,6 +16,8 @@ let uiState = {
 
 const isGemini = window.location.hostname.includes('gemini.google.com');
 const isChatGPT = window.location.hostname.includes('chatgpt.com');
+const isClaude = window.location.hostname.includes('claude.ai');
+const isNotebookLM = window.location.hostname.includes('notebooklm.google.com');
 
 const SELECTORS = {
   chatgpt: {
@@ -33,12 +35,36 @@ const SELECTORS = {
     roleUser: 'user-query',
     sendBtn: 'button[aria-label="Send message"], .send-button',
     messageContent: '.message-content, .query-text'
+  },
+  claude: {
+    input: 'div.ProseMirror[contenteditable="true"], div[data-testid="chat-input"]',
+    articles: '[data-testid="user-message"], .font-claude-response',
+    roleUser: '[data-testid="user-message"]',
+    roleAssistant: '.font-claude-response',
+    sendBtn: 'button[aria-label="Send message"]',
+    messageContent: '.whitespace-pre-wrap.break-words, .whitespace-pre-wrap'
+  },
+  notebooklm: {
+    input: 'textarea.query-box-input',
+    articles: '.chat-message-pair',
+    roleUser: '.from-user-container',
+    roleAssistant: '.to-user-container',
+    sendBtn: 'button.submit-button[type="submit"]',
+    messageContent: '.from-user-message-inner-content, .from-user-container .message-text-content'
   }
 };
 
-const currentConfig = isGemini ? SELECTORS.gemini : SELECTORS.chatgpt;
+function getCurrentConfig() {
+  if (isClaude) return SELECTORS.claude;
+  if (isNotebookLM) return SELECTORS.notebooklm;
+  if (isGemini) return SELECTORS.gemini;
+  return SELECTORS.chatgpt;
+}
+const currentConfig = getCurrentConfig();
 
 let flowObserver = null;
+let manualScrollLock = false;
+let manualScrollTimeout = null;
 
 chrome.storage.local.get(['pendingList', 'uiState'], (result) => {
   if (result.pendingList) pendingList = result.pendingList;
@@ -257,7 +283,7 @@ function makeResizable(element) {
 
     // Constraints
     const minW = 200, maxW = 800;
-    const minH = 150, maxH = window.innerHeight * 0.95;
+    const minH = 180, maxH = window.innerHeight * 0.95;
 
     if (newWidth < minW) {
       if (newLeft !== startLeft) newLeft = startLeft + (startWidth - minW);
@@ -396,6 +422,12 @@ function startConversationObserver() {
 
 let articleToFlowIndex = new Map();
 
+function isUserArticle(article) {
+  if (isGemini) return article.tagName.toLowerCase() === 'user-query';
+  if (isClaude) return article.matches('[data-testid="user-message"]');
+  return !!article.querySelector(currentConfig.roleUser);
+}
+
 function scanConversation() {
   const articles = document.querySelectorAll(currentConfig.articles);
   const newList = [];
@@ -404,12 +436,7 @@ function scanConversation() {
   let currentFlowIndex = -1;
   
   articles.forEach((article) => {
-    let isUser = false;
-    if (isChatGPT) {
-      isUser = !!article.querySelector(currentConfig.roleUser);
-    } else if (isGemini) {
-      isUser = article.tagName.toLowerCase() === 'user-query';
-    }
+    const isUser = isUserArticle(article);
     
     if (isUser) {
       currentFlowIndex = newList.length;
@@ -431,8 +458,19 @@ function scanConversation() {
   const isDifferent = newList.length !== flowList.length || newList.some((item, i) => item.text !== flowList[i]?.text);
 
   if (isDifferent) {
+    const container = document.getElementById('pending-items-container');
+    const isAtBottom = container ? (container.scrollHeight - container.scrollTop - container.clientHeight < 20) : false;
+    
     flowList = newList;
-    if (uiState.activeTab === 'flow') { renderList(); observeFlowVisibility(); }
+    if (uiState.activeTab === 'flow') { 
+      renderList(); 
+      observeFlowVisibility(); 
+      if (isAtBottom) {
+        setTimeout(() => {
+          container.scrollTop = container.scrollHeight;
+        }, 50);
+      }
+    }
   } else if (uiState.activeTab === 'flow' && !flowObserver) {
     observeFlowVisibility();
   }
@@ -444,6 +482,7 @@ function observeFlowVisibility() {
   const visibleRatios = new Map();
 
   flowObserver = new IntersectionObserver((entries) => {
+    if (manualScrollLock) return;
     entries.forEach(entry => {
       if (entry.isIntersecting) {
         visibleRatios.set(entry.target, entry.intersectionRatio);
@@ -488,9 +527,28 @@ function renderList() {
   if (uiState.activeTab === 'flow') renderFlow(container); else renderPending(container);
 }
 
+function scrollToTarget(el) {
+  el.scrollIntoView({ behavior: 'instant', block: 'start' });
+  if (isClaude) {
+    requestAnimationFrame(() => {
+      let parent = el.parentElement;
+      while (parent && parent !== document.documentElement) {
+        const s = getComputedStyle(parent);
+        if (/(auto|scroll)/.test(s.overflowY) && parent.scrollHeight > parent.clientHeight + 10) {
+          parent.scrollTop = Math.max(0, parent.scrollTop - 64);
+          return;
+        }
+        parent = parent.parentElement;
+      }
+      window.scrollBy(0, -64);
+    });
+  }
+}
+
 function renderFlow(container) {
   if (flowList.length === 0) {
-    container.innerHTML = `<div style="text-align:center; color:#aaa; padding: 20px; font-size:12px;">${i18n('noPromptsFound', isGemini ? 'Gemini' : 'ChatGPT')}</div>`;
+    const platformName = isClaude ? 'Claude' : isNotebookLM ? 'NotebookLM' : isGemini ? 'Gemini' : 'ChatGPT';
+    container.innerHTML = `<div style="text-align:center; color:#aaa; padding: 20px; font-size:12px;">${i18n('noPromptsFound', platformName)}</div>`;
     return;
   }
   flowList.forEach((item, index) => {
@@ -499,15 +557,17 @@ function renderFlow(container) {
     const imgIcon = item.hasImage ? `<span class="flow-img-icon"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></span>` : '';
     el.innerHTML = `<div class="outline-left"><div class="flow-index">${index + 1}</div></div><div class="outline-text">${imgIcon}${escapeHtml(item.text)}</div>`;
     el.addEventListener('click', () => {
-      // Re-query the element at click time to handle Gemini re-renders
+      document.querySelectorAll('.outline-item.active').forEach(item => item.classList.remove('active'));
+      el.classList.add('active');
+      manualScrollLock = true;
+      clearTimeout(manualScrollTimeout);
+      manualScrollTimeout = setTimeout(() => { manualScrollLock = false; }, 1000);
+
       let targetEl = null;
       const allArticles = document.querySelectorAll(currentConfig.articles);
       let userCount = -1;
       for (let article of allArticles) {
-        const isUser = isGemini
-          ? article.tagName.toLowerCase() === 'user-query'
-          : !!article.querySelector(currentConfig.roleUser);
-        if (isUser) {
+        if (isUserArticle(article)) {
           userCount++;
           if (userCount === index) {
             targetEl = article;
@@ -517,10 +577,7 @@ function renderFlow(container) {
       }
       if (!targetEl) targetEl = item.element;
       if (targetEl && document.contains(targetEl)) {
-        targetEl.scrollIntoView({ behavior: 'auto', block: 'start' });
-        requestAnimationFrame(() => {
-          targetEl.scrollIntoView({ behavior: 'auto', block: 'start' });
-        });
+        scrollToTarget(targetEl);
       }
     });
     container.appendChild(el);
@@ -592,18 +649,19 @@ function escapeHtml(text) { const div = document.createElement('div'); div.textC
 
 function fillIntoAI(text) {
   const el = document.querySelector(currentConfig.input);
-  if (el) {
-    el.focus();
-    if (isChatGPT) {
-      document.execCommand('selectAll', false, null);
-      document.execCommand('delete', false, null);
-      document.execCommand('insertText', false, text);
-      el.dispatchEvent(new Event('input', { bubbles: true }));
-    } else if (isGemini) {
-      document.execCommand('selectAll', false, null);
-      document.execCommand('delete', false, null);
-      document.execCommand('insertText', false, text);
-      el.dispatchEvent(new Event('input', { bubbles: true }));
+  if (!el) return;
+  el.focus();
+  if (isNotebookLM) {
+    const nativeSet = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set;
+    nativeSet.call(el, text);
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+  } else {
+    document.execCommand('selectAll', false, null);
+    document.execCommand('delete', false, null);
+    document.execCommand('insertText', false, text);
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+    if (isGemini) {
       el.dispatchEvent(new Event('change', { bubbles: true }));
     }
   }
