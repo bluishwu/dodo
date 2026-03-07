@@ -1,9 +1,9 @@
 {
   "appName": {
-    "message": "dodo - AI 对话流与消息队列管理"
+    "message": "dodo - AI 对话导航与消息队列管理"
   },
   "appDesc": {
-    "message": "在 ChatGPT、Gemini、Claude 和 NotebookLM 上管理消息队列与对话流"
+    "message": "在 ChatGPT、Gemini、Claude 和 NotebookLM 上管理消息队列与对话导航"
   },
   "tabQueue": {
     "message": "Queue"
@@ -52,5 +52,36 @@
   },
   "noText": {
     "message": "(无文本)"
-  }
+  },
+  "welcomeTitle": {
+    "message": "欢迎使用 dodo"
+  },
+  "welcomeDesc": {
+    "message": "管理你的 AI 对话工作流"
+  },
+  "guide1": {
+    "message": "<b>Queue</b>: 草拟想法，按序一键发送"
+  },
+  "guide2": {
+    "message": "<b>Flow</b>: 对话导航，快速跳转定位"
+  },
+  "guide3": {
+    "message": "<b>Drag</b>: 自由拖动，贴边自动隐藏"
+  },
+  "welcomeHint": {
+    "message": "现在就在下方输入你的第一个想法吧！"
+  },
+  "welcomeHintFlow": {
+    "message": "现在就给 AI 发送一条消息吧！"
+  },
+  "popTitle": { "message": "dodo" },
+  "popStep1Title": { "message": "访问 AI 网站" },
+  "popStep1Desc": { "message": "前往 ChatGPT, Claude, Gemini 或 NotebookLM" },
+  "popStep2Title": { "message": "展开侧边栏" },
+  "popStep2Desc": { "message": "点击页面右边缘的悬浮图标即可展开" },
+  "popStep3Title": { "message": "管理队列与流" },
+  "popStep3Desc": { "message": "Queue 管理待发消息，Flow 快速跳转对话" },
+  "popHowTo": { "message": "如何使用?" },
+  "popMakeOrganized": { "message": "让 AI 对话更有序" },
+  "guideGotIt": { "message": "[不再显示]" }
 }

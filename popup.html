@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body {
+      width: 300px;
+      margin: 0;
+      padding: 12px 12px 20px 12px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: #333;
+      background: #fff;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .header img { width: 24px; height: 24px; }
+    .header h1 { font-size: 16px; margin: 0; color: #1a1a1a; flex: 1; }
+    .version { font-size: 10px; color: #aaa; }
+    
+    .section { margin-bottom: 12px; }
+    .section h2 { font-size: 11px; margin: 0 0 8px 0; color: #999; text-transform: uppercase; letter-spacing: 0.5px; }
+    
+    .ai-links { 
+      display: flex; 
+      justify-content: center; 
+      gap: 16px; 
+      margin: 8px 0 16px 0; 
+      padding: 8px 12px;
+      border: 1px solid #e0e0e0;
+      border-radius: 20px;
+      background: #fafafa;
+      position: relative;
+      z-index: 1;
+    }
+    .ai-link-btn {
+      display: block;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    .ai-link-btn:hover { transform: scale(1.05); }
+    .icon-circle {
+      width: 32px; height: 32px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: bold; font-size: 14px; color: #fff;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .bg-gpt { background: #10a37f; }
+    .bg-claude { background: #d97757; }
+    .bg-gemini { background: #4285f4; }
+    .bg-nb { background: #ea4335; }
+
+    /* Step guide 1, 2, 3 */
+    .step-item { display: flex; gap: 10px; margin-bottom: 12px; }
+    .step-num {
+      flex-shrink: 0; width: 20px; height: 20px;
+      background: #f0f7fd; color: #3498db;
+      border-radius: 50%; display: flex; align-items: center;
+      justify-content: center; font-weight: bold; font-size: 11px;
+    }
+    .step-content h3 { font-size: 13px; margin: 0 0 2px 0; color: #444; font-weight: 500; }
+    .step-content p { font-size: 11px; margin: 0; color: #888; line-height: 1.4; }
+
+    .footer { margin-top: 12px; text-align: center; font-size: 10px; color: #bbb; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <img src="icons/icon128.png">
+    <h1 id="popTitle">dodo</h1>
+    <span class="version">v1.2.0</span>
+  </div>
+
+  <div class="section">
+    <div class="ai-links">
+      <a href="https://chatgpt.com" target="_blank" class="ai-link-btn" title="ChatGPT">
+        <div class="icon-circle bg-gpt">C</div>
+      </a>
+      <a href="https://claude.ai" target="_blank" class="ai-link-btn" title="Claude">
+        <div class="icon-circle bg-claude">Cl</div>
+      </a>
+      <a href="https://gemini.google.com" target="_blank" class="ai-link-btn" title="Gemini">
+        <div class="icon-circle bg-gemini">G</div>
+      </a>
+      <a href="https://notebooklm.google.com" target="_blank" class="ai-link-btn" title="NotebookLM">
+        <div class="icon-circle bg-nb">N</div>
+      </a>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2 id="popHowTo">How to use?</h2>
+    
+    <div class="step-item">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <h3 id="popStep1Title">Visit AI Site</h3>
+        <p id="popStep1Desc">Go to ChatGPT, Claude, Gemini or NotebookLM</p>
+      </div>
+    </div>
+
+    <div class="step-item">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <h3 id="popStep2Title">Expand Sidebar</h3>
+        <p id="popStep2Desc">Click the icon or hover at the right edge</p>
+      </div>
+    </div>
+
+    <div class="step-item">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <h3 id="popStep3Title">Manage Queue & Flow</h3>
+        <p id="popStep3Desc">Queue for messages, Flow for navigation</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer" id="popMakeOrganized">
+    Make AI conversations more organized
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

@@ -2,6 +2,7 @@ const i18n = (key, ...subs) => chrome.i18n.getMessage(key, subs) || key;
 
 let pendingList = [];
 let flowList = []; 
+let guideDismissed = false;
 let draggedItemIndex = null;
 let editingId = null; 
 let uiState = {
@@ -10,7 +11,7 @@ let uiState = {
   activeTab: 'pending', 
   top: 80,
   left: null,
-  width: 360,
+  width: 280,
   height: null
 };
 
@@ -66,9 +67,10 @@ let flowObserver = null;
 let manualScrollLock = false;
 let manualScrollTimeout = null;
 
-chrome.storage.local.get(['pendingList', 'uiState'], (result) => {
+chrome.storage.local.get(['pendingList', 'uiState', 'guideDismissed'], (result) => {
   if (result.pendingList) pendingList = result.pendingList;
   if (result.uiState) uiState = { ...uiState, ...result.uiState };
+  if (result.guideDismissed) guideDismissed = result.guideDismissed;
   renderList();
 });
 
@@ -546,7 +548,29 @@ function scrollToTarget(el) {
 }
 
 function renderFlow(container) {
-  if (flowList.length === 0) {
+  if (flowList.length === 0 && !guideDismissed) {
+    container.innerHTML = `
+      <div class="empty-guide-container">
+        <div class="empty-guide-title">${i18n('welcomeTitle')}</div>
+        <ul class="empty-guide-list">
+          <li>${i18n('guide1')}</li>
+          <li>${i18n('guide2')}</li>
+          <li>${i18n('guide3')}</li>
+        </ul>
+        <div class="empty-guide-hint">${i18n('welcomeHintFlow')} <span class="dismiss-guide-btn">${i18n('guideGotIt')}</span></div>
+      </div>
+    `;
+    const dismissBtn = container.querySelector('.dismiss-guide-btn');
+    if (dismissBtn) {
+      dismissBtn.addEventListener('click', () => {
+        guideDismissed = true;
+        chrome.storage.local.set({ guideDismissed: true });
+        renderList();
+      });
+    }
+    return;
+  }
+  if (flowList.length === 0 && guideDismissed) {
     const platformName = isClaude ? 'Claude' : isNotebookLM ? 'NotebookLM' : isGemini ? 'Gemini' : 'ChatGPT';
     container.innerHTML = `<div style="text-align:center; color:#aaa; padding: 20px; font-size:12px;">${i18n('noPromptsFound', platformName)}</div>`;
     return;
@@ -586,6 +610,32 @@ function renderFlow(container) {
 }
 
 function renderPending(container) {
+  if (pendingList.length === 0 && !guideDismissed) {
+    container.innerHTML = `
+      <div class="empty-guide-container">
+        <div class="empty-guide-title">${i18n('welcomeTitle')}</div>
+        <ul class="empty-guide-list">
+          <li>${i18n('guide1')}</li>
+          <li>${i18n('guide2')}</li>
+          <li>${i18n('guide3')}</li>
+        </ul>
+        <div class="empty-guide-hint">${i18n('welcomeHint')} <span class="dismiss-guide-btn">${i18n('guideGotIt')}</span></div>
+      </div>
+    `;
+    const dismissBtn = container.querySelector('.dismiss-guide-btn');
+    if (dismissBtn) {
+      dismissBtn.addEventListener('click', () => {
+        guideDismissed = true;
+        chrome.storage.local.set({ guideDismissed: true });
+        renderList();
+      });
+    }
+    return;
+  }
+  if (pendingList.length === 0 && guideDismissed) {
+    container.innerHTML = `<div style="text-align:center; color:#aaa; padding: 20px; font-size:12px;">${i18n('inputPlaceholder')}</div>`;
+    return;
+  }
   const iconEdit = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>`;
   const iconSend = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 7-7 7 7"/><path d="M12 19V5"/></svg>`;
   const iconFill = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="3" y2="15"/></svg>`;

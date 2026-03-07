@@ -52,5 +52,36 @@
   },
   "noText": {
     "message": "(No text)"
-  }
+  },
+  "welcomeTitle": {
+    "message": "Welcome to dodo"
+  },
+  "welcomeDesc": {
+    "message": "Manage your AI chat workflow"
+  },
+  "guide1": {
+    "message": "<b>Queue</b>: Draft ideas and send in order"
+  },
+  "guide2": {
+    "message": "<b>Flow</b>: Quickly navigate chat history"
+  },
+  "guide3": {
+    "message": "<b>Drag</b>: Move freely or dock to the edge"
+  },
+  "welcomeHint": {
+    "message": "Start by adding your first idea below!"
+  },
+  "welcomeHintFlow": {
+    "message": "Start by sending a message to the AI!"
+  },
+  "popTitle": { "message": "dodo" },
+  "popStep1Title": { "message": "Visit AI Sites" },
+  "popStep1Desc": { "message": "Go to ChatGPT, Claude, Gemini or NotebookLM" },
+  "popStep2Title": { "message": "Expand Sidebar" },
+  "popStep2Desc": { "message": "Click the floating icon at the right edge" },
+  "popStep3Title": { "message": "Manage Queue & Flow" },
+  "popStep3Desc": { "message": "Queue for messages, Flow for navigation" },
+  "popHowTo": { "message": "How to use?" },
+  "popMakeOrganized": { "message": "Make AI conversations more organized" },
+  "guideGotIt": { "message": "[Dismiss]" }
 }
