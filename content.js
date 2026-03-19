@@ -21,13 +21,24 @@ const isClaude = window.location.hostname.includes('claude.ai');
 const isNotebookLM = window.location.hostname.includes('notebooklm.google.com');
 
 const SELECTORS = {
+  // chatgpt: {
+  //   input: '#prompt-textarea',
+  //   articles: 'article',
+  //   roleAssistant: '[data-message-author-role="assistant"]',
+  //   roleUser: '[data-message-author-role="user"]',
+  //   sendBtn: 'button[data-testid="send-button"], button[aria-label="Send prompt"]',
+  //   messageContent: '.markdown'
+  // },
+  /*ChatGPT changes the DOM structure and updates the container label.*/
   chatgpt: {
     input: '#prompt-textarea',
-    articles: 'article',
+    // 1. Replace 'article' with the new container class name.
+    articles: 'div[class*="group/turn-messages"]',
     roleAssistant: '[data-message-author-role="assistant"]',
     roleUser: '[data-message-author-role="user"]',
     sendBtn: 'button[data-testid="send-button"], button[aria-label="Send prompt"]',
-    messageContent: '.markdown'
+    // 2. Added compatibility with user message text classes.
+    messageContent: '.markdown, .whitespace-pre-wrap'
   },
   gemini: {
     input: 'div[contenteditable="true"][role="textbox"], .ql-editor[contenteditable="true"]',
