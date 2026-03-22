@@ -83,5 +83,9 @@
   "popStep3Desc": { "message": "Queue 管理待发消息，Flow 快速跳转对话" },
   "popHowTo": { "message": "如何使用?" },
   "popMakeOrganized": { "message": "让 AI 对话更有序" },
-  "guideGotIt": { "message": "[不再显示]" }
+  "popContact": { "message": "联系 / 反馈 Bug" },
+  "guideGotIt": { "message": "[不再显示]" },
+  "flowCompactMode": { "message": "简洁模式" },
+  "flowCompactExit": { "message": "退出简洁模式" },
+  "flowCompactDrag": { "message": "拖动位置" }
 }

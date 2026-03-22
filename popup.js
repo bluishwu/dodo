@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Translation
   const elements = [
-    'popTitle', 'popHowTo', 'popMakeOrganized',
+    'popTitle', 'popHowTo', 'popMakeOrganized', 'popContact',
     'popStep1Title', 'popStep1Desc',
     'popStep2Title', 'popStep2Desc',
     'popStep3Title', 'popStep3Desc'

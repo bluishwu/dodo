@@ -83,5 +83,9 @@
   "popStep3Desc": { "message": "Queue for messages, Flow for navigation" },
   "popHowTo": { "message": "How to use?" },
   "popMakeOrganized": { "message": "Make AI conversations more organized" },
-  "guideGotIt": { "message": "[Dismiss]" }
+  "popContact": { "message": "Contact / Feedback Bug" },
+  "guideGotIt": { "message": "[Dismiss]" },
+  "flowCompactMode": { "message": "Compact mode" },
+  "flowCompactExit": { "message": "Exit compact mode" },
+  "flowCompactDrag": { "message": "Drag to move" }
 }

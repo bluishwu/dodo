@@ -1,7 +1,7 @@
 #gpt-pending-list-container {
   position: fixed;
   width: 360px;
-  min-width: 200px;
+  min-width: 240px;
   max-width: 800px;
   height: auto;
   min-height: 200px;
@@ -121,7 +121,7 @@
   transform: translateX(calc(100% + 15px));
 }
 
-#gpt-pending-list-container.docked .toggle-sidebar {
+#gpt-pending-list-container.docked.collapsed .toggle-sidebar {
   display: flex;
 }
 
@@ -204,6 +204,38 @@
   display: flex;
   align-items: center;
   height: 100%;
+}
+
+.header-right-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.flow-compact-toggle {
+  width: 24px;
+  height: 24px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  cursor: pointer;
+  color: #c2c2c2;
+  transition: all 0.2s;
+}
+
+.flow-compact-toggle.visible {
+  display: flex;
+}
+
+.flow-compact-toggle:hover {
+  background: #f0f0f0;
+  color: #777;
+}
+
+.flow-compact-toggle.active {
+  background: #ededed;
+  color: #555;
 }
 
 .header-chevron {
@@ -510,6 +542,163 @@
 
 .outline-item:hover .flow-img-icon {
   color: #666;
+}
+
+#gpt-pending-list-container.flow-compact-mode .pending-list-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 0 6px 0;
+  overflow-y: auto;
+  scrollbar-gutter: stable both-edges;
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+
+#gpt-pending-list-container.flow-compact-mode .pending-list-content::-webkit-scrollbar {
+  width: 2px;
+}
+
+#gpt-pending-list-container.flow-compact-mode .pending-list-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+#gpt-pending-list-container.flow-compact-mode .pending-list-content::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 999px;
+}
+
+#gpt-pending-list-container.flow-compact-mode .pending-list-content:hover {
+  scrollbar-color: rgba(0, 0, 0, 0.12) transparent;
+}
+
+#gpt-pending-list-container.flow-compact-mode .pending-list-content:hover::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.12);
+}
+
+#gpt-pending-list-container.flow-compact-mode {
+  width: 48px !important;
+  min-width: 48px !important;
+  max-width: 48px !important;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+#gpt-pending-list-container.flow-compact-mode.docked.collapsed {
+  overflow: visible;
+}
+
+#gpt-pending-list-container.flow-compact-mode .unified-header,
+#gpt-pending-list-container.flow-compact-mode .pending-input-area,
+#gpt-pending-list-container.flow-compact-mode .floating-icon-view,
+#gpt-pending-list-container.flow-compact-mode .resizer-e,
+#gpt-pending-list-container.flow-compact-mode .resizer-w,
+#gpt-pending-list-container.flow-compact-mode .resizer-nw,
+#gpt-pending-list-container.flow-compact-mode .resizer-ne,
+#gpt-pending-list-container.flow-compact-mode .resizer-sw,
+#gpt-pending-list-container.flow-compact-mode .resizer-se {
+  display: none !important;
+}
+
+#gpt-pending-list-container.flow-compact-mode:not(.docked.collapsed) .toggle-sidebar {
+  display: none !important;
+}
+
+#gpt-pending-list-container.flow-compact-mode.docked.collapsed .toggle-sidebar {
+  display: flex !important;
+}
+
+#gpt-pending-list-container.flow-compact-mode .outline-item {
+  width: 100%;
+  min-height: 30px;
+  padding: 0;
+  margin: 2px 0;
+  border-bottom: none;
+  border-radius: 0;
+  justify-content: center;
+}
+
+#gpt-pending-list-container.flow-compact-mode .outline-item .outline-left {
+  margin-right: 0;
+}
+
+#gpt-pending-list-container.flow-compact-mode .outline-item .outline-text,
+#gpt-pending-list-container.flow-compact-mode .outline-item .flow-img-icon {
+  display: none;
+}
+
+#gpt-pending-list-container.flow-compact-mode .outline-item .flow-index {
+  min-width: 20px;
+  text-align: center;
+  font-size: 12px;
+  color: #999;
+}
+
+#gpt-pending-list-container.flow-compact-mode .outline-item:hover .flow-index {
+  color: #666;
+}
+
+#gpt-pending-list-container.flow-compact-mode .outline-item.active {
+  background: transparent;
+}
+
+#gpt-pending-list-container.flow-compact-mode .outline-item.active .flow-index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  border-radius: 999px;
+  background: #f4f4f4;
+  color: #666;
+  font-weight: 600;
+}
+
+#gpt-pending-list-container.flow-compact-mode .compact-restore-btn {
+  width: 100%;
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #b5b5b5;
+  cursor: pointer;
+  margin-bottom: 0;
+  flex-shrink: 0;
+}
+
+#gpt-pending-list-container.flow-compact-mode .compact-top-controls {
+  width: 100%;
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: #fff;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+#gpt-pending-list-container.flow-compact-mode .compact-drag-handle {
+  width: 100%;
+  height: 6px;
+  cursor: move;
+}
+
+#gpt-pending-list-container.flow-compact-mode .compact-restore-btn:hover {
+  color: #7a7a7a;
+}
+
+#gpt-pending-list-container.flow-compact-mode .compact-empty-indicator {
+  width: 100%;
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #c9c9c9;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 12px;
+  user-select: none;
 }
 
 /* Empty Guide */

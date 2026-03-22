@@ -9,6 +9,7 @@ let uiState = {
   isDocked: true,
   isCollapsed: true,
   activeTab: 'pending', 
+  flowCompact: false,
   top: 80,
   left: null,
   width: 280,
@@ -21,23 +22,12 @@ const isClaude = window.location.hostname.includes('claude.ai');
 const isNotebookLM = window.location.hostname.includes('notebooklm.google.com');
 
 const SELECTORS = {
-  // chatgpt: {
-  //   input: '#prompt-textarea',
-  //   articles: 'article',
-  //   roleAssistant: '[data-message-author-role="assistant"]',
-  //   roleUser: '[data-message-author-role="user"]',
-  //   sendBtn: 'button[data-testid="send-button"], button[aria-label="Send prompt"]',
-  //   messageContent: '.markdown'
-  // },
-  /*ChatGPT changes the DOM structure and updates the container label.*/
   chatgpt: {
     input: '#prompt-textarea',
-    // 1. Replace 'article' with the new container class name.
     articles: 'div[class*="group/turn-messages"]',
     roleAssistant: '[data-message-author-role="assistant"]',
     roleUser: '[data-message-author-role="user"]',
     sendBtn: 'button[data-testid="send-button"], button[aria-label="Send prompt"]',
-    // 2. Added compatibility with user message text classes.
     messageContent: '.markdown, .whitespace-pre-wrap'
   },
   gemini: {
@@ -77,6 +67,7 @@ const currentConfig = getCurrentConfig();
 let flowObserver = null;
 let manualScrollLock = false;
 let manualScrollTimeout = null;
+let lastAutoActiveFlowIndex = -1;
 
 chrome.storage.local.get(['pendingList', 'uiState', 'guideDismissed'], (result) => {
   if (result.pendingList) pendingList = result.pendingList;
@@ -126,8 +117,13 @@ function injectUI() {
           <div class="tab-item ${uiState.activeTab === 'flow' ? 'active' : ''}" data-tab="flow">${i18n('tabFlow')}</div>
         </div>
       </div>
+      <div class="header-right-actions">
+        <div class="flow-compact-toggle ${uiState.activeTab === 'flow' ? 'visible' : ''} ${uiState.flowCompact ? 'active' : ''}" title="${i18n('flowCompactMode')}">
+          ${buildCompactModeIcon()}
+        </div>
       <div class="minimize-btn" title="${i18n('minimize')}">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+      </div>
       </div>
     </div>
 
@@ -167,6 +163,17 @@ function injectUI() {
     uiState.isCollapsed = true;
     saveUIState();
   };
+  container.querySelector('.flow-compact-toggle').addEventListener('click', (e) => {
+    e.stopPropagation();
+    uiState.flowCompact = !uiState.flowCompact;
+    if (uiState.flowCompact) {
+      container.classList.remove('collapsed');
+      uiState.isCollapsed = false;
+    }
+    saveUIState();
+    updateTabs(container);
+    renderList();
+  });
   container.querySelector('.minimize-btn').addEventListener('click', collapseAction);
   container.querySelector('.header-chevron').addEventListener('click', collapseAction);
 
@@ -220,6 +227,11 @@ function updateTabs(container) {
   container.querySelectorAll('.tab-item').forEach(t => {
     t.classList.toggle('active', t.dataset.tab === uiState.activeTab);
   });
+  const flowCompactToggle = container.querySelector('.flow-compact-toggle');
+  if (flowCompactToggle) {
+    flowCompactToggle.classList.toggle('visible', uiState.activeTab === 'flow');
+    flowCompactToggle.classList.toggle('active', !!uiState.flowCompact);
+  }
   const inputArea = container.querySelector('.pending-input-area');
   if (inputArea) inputArea.style.display = uiState.activeTab === 'pending' ? 'block' : 'none';
 }
@@ -295,7 +307,7 @@ function makeResizable(element) {
     }
 
     // Constraints
-    const minW = 200, maxW = 800;
+    const minW = 240, maxW = 800;
     const minH = 180, maxH = window.innerHeight * 0.95;
 
     if (newWidth < minW) {
@@ -359,6 +371,9 @@ function makeDraggable(element) {
 
   header.addEventListener('mousedown', onMouseDown);
   iconView.addEventListener('mousedown', onMouseDown);
+  element.addEventListener('mousedown', (e) => {
+    if (e.target.closest('.compact-drag-handle')) onMouseDown(e);
+  });
 
   document.addEventListener('mousemove', (e) => {
     if (!isDragging) return;
@@ -492,30 +507,44 @@ function scanConversation() {
 function observeFlowVisibility() {
   disconnectFlowObserver();
   
-  const visibleRatios = new Map();
+  const visibleEntries = new Map();
 
   flowObserver = new IntersectionObserver((entries) => {
     if (manualScrollLock) return;
     entries.forEach(entry => {
       if (entry.isIntersecting) {
-        visibleRatios.set(entry.target, entry.intersectionRatio);
+        visibleEntries.set(entry.target, entry.intersectionRatio);
       } else {
-        visibleRatios.delete(entry.target);
+        visibleEntries.delete(entry.target);
       }
     });
 
-    let maxRatio = -1;
+    const viewportCenterY = window.innerHeight / 2;
+    let bestScore = Number.POSITIVE_INFINITY;
+    let bestVisibleHeight = -1;
     let bestElement = null;
-    visibleRatios.forEach((ratio, el) => {
-      if (ratio > maxRatio) {
-        maxRatio = ratio;
+
+    visibleEntries.forEach((_, el) => {
+      const index = articleToFlowIndex.get(el);
+      if (index === undefined) return;
+      const rect = el.getBoundingClientRect();
+      const visibleTop = Math.max(0, rect.top);
+      const visibleBottom = Math.min(window.innerHeight, rect.bottom);
+      const visibleHeight = Math.max(0, visibleBottom - visibleTop);
+      const centerY = visibleTop + visibleHeight / 2;
+      const score = Math.abs(centerY - viewportCenterY);
+
+      if (score < bestScore || (score === bestScore && visibleHeight > bestVisibleHeight)) {
+        bestScore = score;
+        bestVisibleHeight = visibleHeight;
         bestElement = el;
       }
     });
 
     if (bestElement) {
       const index = articleToFlowIndex.get(bestElement);
-      if (index !== undefined) {
+      if (index !== undefined && index !== lastAutoActiveFlowIndex) {
+        lastAutoActiveFlowIndex = index;
         document.querySelectorAll('.outline-item.active').forEach(el => el.classList.remove('active'));
         const item = document.querySelector(`.outline-item[data-flow-index="${index}"]`);
         if (item) item.classList.add('active');
@@ -535,7 +564,9 @@ function disconnectFlowObserver() { if (flowObserver) { flowObserver.disconnect(
 
 function renderList() {
   const container = document.getElementById('pending-items-container');
+  const root = document.getElementById('gpt-pending-list-container');
   if (!container) return;
+  if (root) root.classList.toggle('flow-compact-mode', uiState.activeTab === 'flow' && !!uiState.flowCompact);
   container.innerHTML = '';
   if (uiState.activeTab === 'flow') renderFlow(container); else renderPending(container);
 }
@@ -558,7 +589,53 @@ function scrollToTarget(el) {
   }
 }
 
+function buildCompactModeIcon() {
+  return `
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="8"></circle>
+      <circle cx="12" cy="12" r="2.1" fill="currentColor" stroke="none"></circle>
+    </svg>
+  `;
+}
+
+function appendCompactTopControls(container) {
+  const topControls = document.createElement('div');
+  topControls.className = 'compact-top-controls';
+
+  const dragHandle = document.createElement('div');
+  dragHandle.className = 'compact-drag-handle';
+  dragHandle.title = i18n('flowCompactDrag');
+
+  const restoreBtn = document.createElement('div');
+  restoreBtn.className = 'compact-restore-btn';
+  restoreBtn.title = i18n('flowCompactExit');
+  restoreBtn.innerHTML = buildCompactModeIcon();
+  restoreBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    uiState.flowCompact = false;
+    saveUIState();
+    const root = document.getElementById('gpt-pending-list-container');
+    if (root) updateTabs(root);
+    renderList();
+  });
+  topControls.appendChild(dragHandle);
+  topControls.appendChild(restoreBtn);
+  container.appendChild(topControls);
+}
+
 function renderFlow(container) {
+  if (uiState.flowCompact) {
+    appendCompactTopControls(container);
+    if (flowList.length === 0) {
+      const platformName = isClaude ? 'Claude' : isNotebookLM ? 'NotebookLM' : isGemini ? 'Gemini' : 'ChatGPT';
+      const emptyEl = document.createElement('div');
+      emptyEl.className = 'compact-empty-indicator';
+      emptyEl.title = i18n('noPromptsFound', platformName);
+      emptyEl.innerHTML = `<span>0</span>`;
+      container.appendChild(emptyEl);
+      return;
+    }
+  }
   if (flowList.length === 0 && !guideDismissed) {
     container.innerHTML = `
       <div class="empty-guide-container">
@@ -589,8 +666,12 @@ function renderFlow(container) {
   flowList.forEach((item, index) => {
     const el = document.createElement('div');
     el.className = `outline-item`; el.dataset.flowIndex = index;
-    const imgIcon = item.hasImage ? `<span class="flow-img-icon"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></span>` : '';
-    el.innerHTML = `<div class="outline-left"><div class="flow-index">${index + 1}</div></div><div class="outline-text">${imgIcon}${escapeHtml(item.text)}</div>`;
+    if (uiState.flowCompact) {
+      el.innerHTML = `<div class="outline-left"><div class="flow-index">${index + 1}</div></div>`;
+    } else {
+      const imgIcon = item.hasImage ? `<span class="flow-img-icon"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></span>` : '';
+      el.innerHTML = `<div class="outline-left"><div class="flow-index">${index + 1}</div></div><div class="outline-text">${imgIcon}${escapeHtml(item.text)}</div>`;
+    }
     el.addEventListener('click', () => {
       document.querySelectorAll('.outline-item.active').forEach(item => item.classList.remove('active'));
       el.classList.add('active');
